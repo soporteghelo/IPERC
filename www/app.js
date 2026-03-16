@@ -358,23 +358,25 @@
     card.classList.remove('hidden');
     iframe.style.display = 'block';
     if (fallback) { fallback.style.display = 'none'; fallback.classList.add('hidden'); }
-    // Update src whenever URL changes
+    // Update src whenever URL changes (always, not gated by wired)
     iframe.src = url;
 
-    // Open-in-new-tab buttons
-    const openInTab = () => window.open(url, '_blank', 'noopener,noreferrer');
+    // Helpers that read URL fresh at click time to avoid stale-closure bugs
+    const currentUrl = () => state.localConfig.dashboardIframeUrl || '';
+    const openInTab = () => window.open(currentUrl(), '_blank', 'noopener,noreferrer');
     if (btnOpen && !btnOpen.dataset.wired) { btnOpen.dataset.wired = '1'; btnOpen.addEventListener('click', openInTab); }
     if (btnFallbackOpen && !btnFallbackOpen.dataset.wired) { btnFallbackOpen.dataset.wired = '1'; btnFallbackOpen.addEventListener('click', openInTab); }
 
     if (btnFs && !btnFs.dataset.wired) {
       btnFs.dataset.wired = '1';
       btnFs.addEventListener('click', () => {
+        const live = currentUrl();
         if (overlay && iframeFs) {
-          iframeFs.src = url;
+          iframeFs.src = live;
           overlay.classList.remove('hidden');
           overlay.style.display = 'flex';
         } else {
-          window.open(url, '_blank', 'noopener,noreferrer');
+          window.open(live, '_blank', 'noopener,noreferrer');
         }
       });
     }
