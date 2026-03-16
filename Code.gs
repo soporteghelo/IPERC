@@ -185,6 +185,16 @@ function doGetProgramaciones(e) {
     }
   }
 
+  var tz = Session.getScriptTimeZone();
+
+  // Returns a cell value; if the cell is a Date, formats it as ISO 8601 for reliable JS parsing
+  function cellDate(row, index) {
+    if (index < 0) return '';
+    var raw = row[index];
+    if (raw instanceof Date) return Utilities.formatDate(raw, 'UTC', "yyyy-MM-dd'T'HH:mm:ss'Z'");
+    return String(raw == null ? '' : raw).trim();
+  }
+
   var programaciones = rows
     .filter(function(row) { return cell(row, idx.id); })
     .map(function(row) {
@@ -192,7 +202,7 @@ function doGetProgramaciones(e) {
       return {
         programaId:            progId,
         id:                    progId,
-        fechaHoraProgramacion: cell(row, idx.fechaHoraProgramacion),
+        fechaHoraProgramacion: cellDate(row, idx.fechaHoraProgramacion),
         fechaHoraLocal:        cell(row, idx.fechaHoraLocal),
         supervisor:            cell(row, idx.supervisor),
         guardia:               cell(row, idx.guardia),
