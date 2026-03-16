@@ -1435,6 +1435,44 @@
     return isToday ? 'EN PROGRESO' : 'PENDIENTE';
   }
 
+  // Robust date parser for historial sort: tries multiple fields and formats
+  function parseFechaSort(item) {
+    // 1. Try ISO / standard date string from fechaHoraProgramacion
+    if (item.fechaHoraProgramacion) {
+      const t = new Date(item.fechaHoraProgramacion).getTime();
+      if (!isNaN(t) && t > 0) return t;
+    }
+    // 2. Try fechaHoraLocal (format: "DD/MM/YYYY, HH:MM a. m./p. m." or "DD/MM/YYYY, HH:MM")
+    if (item.fechaHoraLocal) {
+      const t = parseFechaHoraLocal(item.fechaHoraLocal);
+      if (!isNaN(t) && t > 0) return t;
+    }
+    return 0;
+  }
+
+  // Parses "16/03/2026, 3:57 p. m." or "16/03/2026, 15:57" → timestamp
+  function parseFechaHoraLocal(str) {
+    try {
+      const parts = String(str).split(', ');
+      if (parts.length < 2) return NaN;
+      const dateParts = parts[0].split('/');
+      if (dateParts.length !== 3) return NaN;
+      const day = Number(dateParts[0]);
+      const month = Number(dateParts[1]) - 1;
+      const year = Number(dateParts[2]);
+      let timePart = parts[1] || '';
+      let isPm = /p\.\s*m/i.test(timePart);
+      let isAm = /a\.\s*m/i.test(timePart);
+      timePart = timePart.replace(/[apm\.\s]/gi, '').trim();
+      const timeSplit = timePart.split(':');
+      let h = Number(timeSplit[0]);
+      const m = Number(timeSplit[1] || 0);
+      if (isPm && h < 12) h += 12;
+      if (isAm && h === 12) h = 0;
+      return new Date(year, month, day, h, m).getTime();
+    } catch (_) { return NaN; }
+  }
+
   async function renderHistorial() {
     const searchInput = document.getElementById('historialSearch');
     const query = searchInput ? normalizeStr(searchInput.value) : '';
@@ -1477,9 +1515,7 @@
     });
 
     filtered.slice().sort((a, b) => {
-      const da = new Date(a.fechaHoraProgramacion || 0).getTime();
-      const db = new Date(b.fechaHoraProgramacion || 0).getTime();
-      return db - da; // más reciente primero
+      return parseFechaSort(b) - parseFechaSort(a); // más reciente primero
     }).forEach((item) => {
       const meta = Number(item.cantidadProgramada || 0);
       const localCount = recordsByProgram.get(String(item.id)) || 0;
