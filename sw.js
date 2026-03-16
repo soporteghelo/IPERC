@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iperc-v5';
+const CACHE_NAME = 'iperc-v6';
 const STATIC_ASSETS = [
   './',
   './index.html',

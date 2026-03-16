@@ -327,22 +327,56 @@
     const card = document.getElementById('dashboardIframeCard');
     const iframe = document.getElementById('dashboardIframe');
     const btnFs = document.getElementById('btnIframeFullscreen');
+    const btnOpen = document.getElementById('btnIframeOpen');
+    const fallback = document.getElementById('dashboardIframeFallback');
+    const btnFallbackOpen = document.getElementById('btnIframeFallbackOpen');
     const overlay = document.getElementById('iframeOverlay');
     const iframeFs = document.getElementById('dashboardIframeFs');
     const btnClose = document.getElementById('btnIframeOverlayClose');
     if (!card || !iframe) return;
-    if (url) {
-      iframe.src = url;
-      card.classList.remove('hidden');
-    }
-    if (btnFs && overlay && iframeFs) {
+
+    if (!url) return;
+
+    card.classList.remove('hidden');
+    iframe.style.display = 'block';
+    if (fallback) { fallback.style.display = 'none'; fallback.classList.add('hidden'); }
+
+    // Set src only if it changed to avoid reload flicker
+    if (iframe.src !== url) iframe.src = url;
+
+    // Detect X-Frame-Options block: after load, try accessing contentDocument
+    // If cross-origin block occurs, show fallback button
+    iframe.onload = () => {
+      try {
+        // This throws if blocked by X-Frame-Options
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        if (!doc || !doc.body || doc.body.innerHTML === '') throw new Error('empty');
+      } catch (_) {
+        // Likely blocked — show fallback, hide iframe
+        iframe.style.display = 'none';
+        if (fallback) { fallback.style.display = 'block'; fallback.classList.remove('hidden'); }
+      }
+    };
+
+    // "Abrir" and fallback buttons: open in new tab
+    const openInTab = () => window.open(url, '_blank', 'noopener,noreferrer');
+    if (btnOpen && !btnOpen.dataset.wired) { btnOpen.dataset.wired = '1'; btnOpen.addEventListener('click', openInTab); }
+    if (btnFallbackOpen && !btnFallbackOpen.dataset.wired) { btnFallbackOpen.dataset.wired = '1'; btnFallbackOpen.addEventListener('click', openInTab); }
+
+    if (btnFs && !btnFs.dataset.wired) {
+      btnFs.dataset.wired = '1';
       btnFs.addEventListener('click', () => {
-        iframeFs.src = url;
-        overlay.classList.remove('hidden');
-        overlay.style.display = 'flex';
+        if (overlay && iframeFs) {
+          iframeFs.src = url;
+          overlay.classList.remove('hidden');
+          overlay.style.display = 'flex';
+        } else {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
       });
     }
-    if (btnClose && overlay && iframeFs) {
+    if (btnClose && overlay && iframeFs && !btnClose.dataset.wired) {
+      btnClose.dataset.wired = '1';
       btnClose.addEventListener('click', () => {
         overlay.classList.add('hidden');
         overlay.style.display = 'none';
