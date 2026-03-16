@@ -238,23 +238,40 @@
     const retentionDays = Math.max(1, Number(state.localConfig.retentionDays || 14));
     const limitDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
     try {
-      const records = await getAllRecords();
-      for (const r of records) {
-        if (r.syncStatus === 'SYNCED' || r.estado === 'SYNCED') {
-          const d = r.createdAt ? new Date(r.createdAt) : null;
-          if (d && d < limitDate) await deleteRecord(r.id);
-        }
-      }
-      const progs = await getAllProgramaciones();
-      for (const p of progs) {
-        if (p.syncStatus === 'SYNCED') {
-          const d = p.fechaHoraProgramacion ? new Date(p.fechaHoraProgramacion) : null;
-          if (d && d < limitDate) await deleteProgramacion(p.id);
-        }
-      }
+      // Use cursor to avoid loading all records into memory
+      await cursorDelete(DB_CONFIG.recordsStore, (r) => {
+        if (r.syncStatus !== 'SYNCED' && r.estado !== 'SYNCED') return false;
+        const d = r.createdAt ? new Date(r.createdAt) : null;
+        return d && d < limitDate;
+      });
+      await cursorDelete(DB_CONFIG.programacionesStore, (p) => {
+        if (p.syncStatus !== 'SYNCED') return false;
+        const d = p.fechaHoraProgramacion ? new Date(p.fechaHoraProgramacion) : null;
+        return d && d < limitDate;
+      });
     } catch (err) {
       console.error('cleanupOldData:', err);
     }
+  }
+
+  // Iterates an IDB store with a cursor and deletes records where predicate(record) === true
+  // Never loads all records into memory — processes one at a time
+  function cursorDelete(storeName, predicate) {
+    return new Promise((resolve, reject) => {
+      const tx = state.db.transaction(storeName, 'readwrite');
+      const s = tx.objectStore(storeName);
+      const req = s.openCursor();
+      req.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (!cursor) { resolve(); return; }
+        if (predicate(cursor.value)) {
+          cursor.delete();
+        }
+        cursor.continue();
+      };
+      req.onerror = () => reject(req.error);
+      tx.onerror = () => reject(tx.error);
+    });
   }
 
   async function exportHistorialReport() {
@@ -1494,19 +1511,27 @@
     } catch (_) { return NaN; }
   }
 
-  async function renderHistorial() {
+  const HISTORIAL_PAGE_SIZE = 20;
+
+  async function renderHistorial(page = 0) {
     const searchInput = document.getElementById('historialSearch');
     const query = searchInput ? normalizeStr(searchInput.value) : '';
-    const allRecords = filterDataBySessionAndAge(await getAllRecords(), 'registro');
-    const allProgramaciones = filterDataBySessionAndAge(await getAllProgramaciones(), 'programacion');
 
-    // Wire search input once
+    // Reset to page 0 when search changes
+    if (page === 0) els.historialList.innerHTML = '';
+
+    // Wire search input once — resets pagination on new query
     if (searchInput && !searchInput.dataset.wired) {
       searchInput.dataset.wired = '1';
-      searchInput.addEventListener('input', () => renderHistorial());
+      searchInput.addEventListener('input', () => renderHistorial(0));
     }
 
-    els.historialList.innerHTML = '';
+    // Load only programaciones (lightweight) — NOT all records
+    const allProgramaciones = filterDataBySessionAndAge(await getAllProgramaciones(), 'programacion');
+
+    // Build a map of PENDING local records per programacion (only unsyced — typically few)
+    // This avoids loading all SYNCED records unnecessarily
+    const pendingLocalByProg = await getPendingCountByProg();
 
     // Filter by search query
     const filtered = query
@@ -1519,28 +1544,27 @@
         })
       : allProgramaciones;
 
-    if (!filtered.length && !allRecords.length) {
-      els.historialList.innerHTML = '<article class="bg-white rounded-xl p-4 border border-slate-100"><p class="text-sm text-slate-500">Sin datos locales todavía.</p></article>';
-      return;
-    }
-    if (!filtered.length) {
-      els.historialList.innerHTML = '<article class="bg-white rounded-xl p-4 border border-slate-100"><p class="text-sm text-slate-500">Sin resultados para esa búsqueda.</p></article>';
+    if (page === 0 && !filtered.length) {
+      els.historialList.innerHTML = allProgramaciones.length === 0
+        ? '<article class="bg-white rounded-xl p-4 border border-slate-100"><p class="text-sm text-slate-500">Sin datos locales todavía.</p></article>'
+        : '<article class="bg-white rounded-xl p-4 border border-slate-100"><p class="text-sm text-slate-500">Sin resultados para esa búsqueda.</p></article>';
       return;
     }
 
-    const recordsByProgram = new Map();
-    allRecords.forEach((record) => {
-      const key = String(record.programacionId || '');
-      if (!key) return;
-      recordsByProgram.set(key, (recordsByProgram.get(key) || 0) + 1);
-    });
+    const sorted = filtered.slice().sort((a, b) => parseFechaSort(b) - parseFechaSort(a));
+    const start = page * HISTORIAL_PAGE_SIZE;
+    const pageItems = sorted.slice(start, start + HISTORIAL_PAGE_SIZE);
+    const hasMore = sorted.length > start + HISTORIAL_PAGE_SIZE;
 
-    filtered.slice().sort((a, b) => {
-      return parseFechaSort(b) - parseFechaSort(a); // más reciente primero
-    }).forEach((item) => {
+    // Remove existing "ver más" button before appending new cards
+    const existingVerMas = document.getElementById('btnVerMasHistorial');
+    if (existingVerMas) existingVerMas.remove();
+
+    pageItems.forEach((item) => {
       const meta = Number(item.cantidadProgramada || 0);
-      const localCount = recordsByProgram.get(String(item.id)) || 0;
-      const realizados = Math.max(localCount, Number(item.realizadosRemoto || 0));
+      // Use realizadosRemoto (from server) + any local pending not yet synced
+      const pendingLocal = pendingLocalByProg.get(String(item.id)) || 0;
+      const realizados = Math.max(Number(item.realizadosRemoto || 0) + pendingLocal, pendingLocal);
       const porcentaje = meta > 0 ? Math.round((realizados / meta) * 100) : 0;
       const statusText = getProgramacionStatus(item, realizados);
       const statusClass = statusText === 'COMPLETO' ? 'ok' : statusText === 'EN PROGRESO' ? 'mid' : 'pending';
@@ -1615,6 +1639,28 @@
       });
       els.historialList.appendChild(card);
     });
+
+    // "Ver más" button for pagination
+    if (hasMore) {
+      const btnMore = document.createElement('button');
+      btnMore.id = 'btnVerMasHistorial';
+      btnMore.className = 'w-full py-3 rounded-xl border border-slate-200 text-sm text-primary font-bold bg-white';
+      btnMore.textContent = `Ver más (${sorted.length - start - HISTORIAL_PAGE_SIZE} restantes)`;
+      btnMore.addEventListener('click', () => renderHistorial(page + 1));
+      els.historialList.appendChild(btnMore);
+    }
+  }
+
+  // Returns Map<programacionId, count> for PENDING (unsynced) local records only
+  // Much cheaper than loading all records since PENDING records are always few
+  async function getPendingCountByProg() {
+    const map = new Map();
+    const pending = await getPendingRecords();
+    for (const r of pending) {
+      const key = String(r.programacionId || '');
+      if (key) map.set(key, (map.get(key) || 0) + 1);
+    }
+    return map;
   }
 
   async function renderProgramacionDetail(programacion) {
