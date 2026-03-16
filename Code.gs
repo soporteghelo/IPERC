@@ -92,10 +92,18 @@ function doGetConfig(e) {
 
   function formatCellValue(key, raw) {
     if (raw == null || raw === '') return '';
-    if (raw instanceof Date) {
-      if (timeFields.indexOf(key) >= 0) return Utilities.formatDate(raw, tz, 'HH:mm');
-      return Utilities.formatDate(raw, tz, 'yyyy-MM-dd HH:mm:ss');
+    // Time fields: accept plain number (9 = 09:00, 10.5 = 10:30) or legacy Date cell
+    if (timeFields.indexOf(key) >= 0) {
+      if (raw instanceof Date) return Utilities.formatDate(raw, tz, 'HH:mm');
+      var num = Number(raw);
+      if (!isNaN(num)) {
+        var h = Math.floor(num);
+        var m = Math.round((num - h) * 60);
+        return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+      }
+      return String(raw).trim();
     }
+    if (raw instanceof Date) return Utilities.formatDate(raw, tz, 'yyyy-MM-dd HH:mm:ss');
     if (numericFields.indexOf(key) >= 0) {
       var n = Number(raw);
       return isNaN(n) ? String(raw).trim() : n;
