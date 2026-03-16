@@ -1583,7 +1583,10 @@
           </div>
           <div class="flex items-center gap-2">
             <span class="history-chip ${statusClass}">${statusText}</span>
-            <button class="camera-btn material-symbols-outlined text-primary hover:text-primary/80 transition-colors" style="font-size:20px" data-programacion-id="${item.id}">add_a_photo</button>
+            ${meta > 0 && realizados >= meta
+              ? `<span class="material-symbols-outlined text-slate-300" style="font-size:20px" title="Meta alcanzada">add_a_photo</span>`
+              : `<button class="camera-btn material-symbols-outlined text-primary hover:text-primary/80 transition-colors" style="font-size:20px" data-programacion-id="${item.id}">add_a_photo</button>`
+            }
           </div>
         </div>
         <div class="flex items-center gap-2 text-slate-600 text-xs font-semibold">
@@ -1622,23 +1625,20 @@
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
       });
 
-      // Camera button click handler
+      // Camera button click handler (solo se renderiza cuando realizados < meta)
       const cameraBtn = card.querySelector('.camera-btn');
-      cameraBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const meta = Number(item.cantidadProgramada || 0);
-        if (meta > 0) {
-          const allRecords = await getAllRecords();
-          const realizados = allRecords.filter(r => r.programacionId === item.id).length;
-          if (realizados >= meta) {
-            showToast(`Meta alcanzada (${realizados}/${meta}). No puedes agregar más registros.`, 'error', 4000);
+      if (cameraBtn) {
+        cameraBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (meta > 0 && realizados >= meta) {
+            showToast(`Meta alcanzada (${realizados}/${meta}). No se pueden agregar más registros.`, 'error', 4000);
             return;
           }
-        }
-        state.latestProgramacion = item;
-        applyLatestProgramacionToRegistro();
-        showView('registro');
-      });
+          state.latestProgramacion = item;
+          applyLatestProgramacionToRegistro();
+          showView('registro');
+        });
+      }
       els.historialList.appendChild(card);
     });
 
