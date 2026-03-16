@@ -331,6 +331,13 @@ function handleRegistroPost(payload, target) {
   } else {
     folderTree = getStructuredFolder(record.supervisor, usedDate, target.driveFolderId);
     imageResult = saveImage(record, folderTree.daySupervisorFolder, record.programacionId);
+    // Build readable full folder path: year/month/day/supervisor
+    imageResult.folderPath = [
+      folderTree.pathInfo.year,
+      folderTree.pathInfo.month,
+      folderTree.pathInfo.day,
+      folderTree.pathInfo.supervisor,
+    ].join('/');
   }
 
   const rowData = buildRegistroRow(record, imageResult, payload.metadata || {});
@@ -411,6 +418,9 @@ function getRegistrosHeaders() {
     'cfgRegistrosTab',
     'source',
     'syncedAt',
+    'driveFileId',
+    'driveFileUrl',
+    'driveFolderPath',
   ];
 }
 
@@ -441,8 +451,9 @@ function buildRegistroRow(record, imageResult, metadata) {
     record.trabajadorOrigen || '',
     record.bloqueoProgramadoId || '',
     record.actividad || '',
-    imageResult.fileId,
-    imageResult.fileUrl,
+    imageResult.fileId || '',
+    imageResult.fileUrl || '',
+    imageResult.folderPath || '',
   ];
 }
 
