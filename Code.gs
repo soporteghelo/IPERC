@@ -15,6 +15,7 @@ function doGet(e) {
     if (action === 'personal') return doGetPersonal(e);
     if (action === 'programaciones') return doGetProgramaciones(e);
     if (action === 'registros') return doGetRegistros(e);
+    if (action === 'config') return doGetConfig(e);
 
     return jsonOutput({ ok: true, service: 'IPERC webhook', ts: new Date().toISOString() });
   } catch (error) {
@@ -70,6 +71,45 @@ function doGetRegistros(e) {
     });
 
   return jsonOutput({ ok: true, registros: registros, total: registros.length, fetchedAt: new Date().toISOString() });
+}
+
+function doGetConfig(e) {
+  var param = (e && e.parameter) ? e.parameter : {};
+  var sheetId = param.sheetId || CONFIG.SHEET_ID;
+  var configTab = 'CONFIG';
+
+  var ss = SpreadsheetApp.openById(sheetId);
+  var sheet = ss.getSheetByName(configTab);
+  if (!sheet) throw new Error('No existe la pestaña CONFIG en el Sheet.');
+
+  var values = sheet.getDataRange().getValues();
+  var result = {};
+
+  // Expected format: row 1 = headers (clave | valor), rows 2+ = key-value pairs
+  var startRow = 0;
+  if (values.length > 0) {
+    var firstCell = String(values[0][0] || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (firstCell === 'clave' || firstCell === 'key' || firstCell === 'campo') {
+      startRow = 1; // skip header row
+    }
+  }
+
+  // Numeric fields that should be cast to Number
+  var numericFields = ['retentionDays', 'syncBatchSize', 'syncRetryMax'];
+
+  for (var i = startRow; i < values.length; i++) {
+    var clave = String(values[i][0] || '').trim();
+    var valor = String(values[i][1] == null ? '' : values[i][1]).trim();
+    if (!clave) continue;
+    if (numericFields.indexOf(clave) >= 0) {
+      var n = Number(valor);
+      result[clave] = isNaN(n) ? valor : n;
+    } else {
+      result[clave] = valor;
+    }
+  }
+
+  return jsonOutput({ ok: true, config: result, fetchedAt: new Date().toISOString() });
 }
 
 function doGetProgramaciones(e) {

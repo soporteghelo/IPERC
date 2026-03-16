@@ -62,6 +62,7 @@
   const USERS_CACHE_KEY = 'iperc_users_cache';
   const PERSONAL_CACHE_KEY = 'iperc_personal_cache';
   const LOCAL_CONFIG_FILE = './config.local.json';
+  const REMOTE_CONFIG_CACHE_KEY = 'iperc_remote_config';
 
   const DEFAULT_LOCAL_CONFIG = {
     webhookUrl: '',
@@ -211,6 +212,7 @@
   async function init() {
     await loadConfigFromFile();
     loadLocalConfig();
+    applyRemoteConfigCache();     // apply cached remote config immediately (offline-safe)
     applyDashboardIframe();
     applyBranding();
     state.usersCache = getUsersCache();
@@ -226,9 +228,10 @@
     await refreshUIStats();
     updateNetworkUI();
     showView(getLoggedUser() ? 'historial' : 'login', { push: false });
-    // Cleanup old data then pull from Sheets in background
+    // Background tasks: cleanup, pull programaciones, pull remote config from Sheets
     cleanupOldData().catch(console.error);
     refreshProgramacionesIfPossible({ silent: true }).catch(console.error);
+    fetchRemoteConfig().catch(console.error);
   }
 
   async function cleanupOldData() {
@@ -361,6 +364,63 @@
     } catch {
       state.baseConfig = structuredClone(DEFAULT_LOCAL_CONFIG);
     }
+  }
+
+  // Fetches amStart/amEnd/pmStart/pmEnd/retentionDays/companyName/dashboardIframeUrl/supportWhatsappNumber
+  // from the CONFIG tab in the Google Sheet. Results are cached in localStorage for offline use.
+  async function fetchRemoteConfig() {
+    const webhookUrl = state.localConfig.webhookUrl || state.baseConfig.webhookUrl;
+    const sheetId = state.localConfig.sheetId || state.baseConfig.sheetId;
+    if (!webhookUrl || !sheetId) return;
+
+    try {
+      const url = `${webhookUrl}?action=config&sheetId=${encodeURIComponent(sheetId)}`;
+      const res = await fetchWithTimeout(url, { cache: 'no-store' }, 20000);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.ok || !data.config) return;
+
+      // Merge remote config into localConfig (remote values take precedence over local file)
+      const remote = data.config;
+      const REMOTE_KEYS = [
+        'amStart', 'amEnd', 'pmStart', 'pmEnd',
+        'retentionDays', 'companyName',
+        'dashboardIframeUrl', 'supportWhatsappNumber',
+      ];
+      REMOTE_KEYS.forEach((key) => {
+        if (remote[key] !== undefined && remote[key] !== '') {
+          state.localConfig[key] = remote[key];
+        }
+      });
+
+      // Cache for offline use
+      try { localStorage.setItem(REMOTE_CONFIG_CACHE_KEY, JSON.stringify(remote)); } catch (_) { /* storage full */ }
+
+      // Re-apply UI that depends on these values
+      applyBranding();
+      applyDashboardIframe();
+    } catch (err) {
+      console.warn('fetchRemoteConfig failed:', err);
+    }
+  }
+
+  // Applies previously cached remote config immediately (synchronous, for offline startup)
+  function applyRemoteConfigCache() {
+    try {
+      const raw = localStorage.getItem(REMOTE_CONFIG_CACHE_KEY);
+      if (!raw) return;
+      const remote = JSON.parse(raw);
+      const REMOTE_KEYS = [
+        'amStart', 'amEnd', 'pmStart', 'pmEnd',
+        'retentionDays', 'companyName',
+        'dashboardIframeUrl', 'supportWhatsappNumber',
+      ];
+      REMOTE_KEYS.forEach((key) => {
+        if (remote[key] !== undefined && remote[key] !== '') {
+          state.localConfig[key] = remote[key];
+        }
+      });
+    } catch (_) { /* ignore */ }
   }
 
   function mergeConfig(base, extra) {
