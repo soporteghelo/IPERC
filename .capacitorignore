@@ -7,3 +7,6 @@ README.md
 README.VERSION
 preview.html
 Code.gs
+build-www.js
+package.json
+package-lock.json

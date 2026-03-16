@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Control IPERC Cerro Lindo</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#12254c',
+            'primary-container': '#2a3b63',
+            'on-primary-container': '#95a6d4',
+            'on-primary': '#ffffff',
+            background: '#f9f9f9',
+            'on-background': '#1a1c1c',
+            surface: '#ffffff',
+            'on-surface': '#1a1c1c',
+            'on-surface-variant': '#44464e',
+            'surface-bright': '#f9f9f9',
+            'surface-dim': '#dadada',
+            'surface-variant': '#e2e2e2',
+            'surface-container-lowest': '#ffffff',
+            'surface-container-low': '#f3f3f3',
+            'surface-container': '#eeeeee',
+            'surface-container-high': '#e8e8e8',
+            'surface-container-highest': '#e2e2e2',
+            secondary: '#585e70',
+            'secondary-container': '#dce2f8',
+            'on-secondary': '#ffffff',
+            'on-secondary-container': '#5e6476',
+            outline: '#75777f',
+            'outline-variant': '#c5c6cf',
+            'surface-tint': '#4d5d88',
+            error: '#ba1a1a',
+            'error-container': '#ffdad6',
+            'on-error': '#ffffff',
+            'on-error-container': '#93000a',
+            'inverse-surface': '#2f3131',
+            'inverse-on-surface': '#f1f1f1',
+            'inverse-primary': '#b5c6f6',
+            muted: '#5e6476',
+          },
+          fontFamily: {
+            body: ['Inter', 'sans-serif'],
+            headline: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <!-- Capacitor / PWA -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#12254c" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Control IPERC" />
+  <link rel="icon" type="image/png" href="./Logo.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="bg-background font-body text-slate-900 overflow-hidden">
+  <!-- Toast notification -->
+  <div id="appToast" class="app-toast hidden">
+    <span id="appToastIcon" class="material-symbols-outlined text-xl">info</span>
+    <div id="appToastMsg" class="text-sm font-medium leading-snug"></div>
+  </div>
+
+  <div id="drawerOverlay" class="drawer-overlay hidden"></div>
+  <aside id="sideDrawer" class="side-drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <h3 class="drawer-title">Menú</h3>
+      <button id="btnCloseDrawer" class="drawer-close" type="button" aria-label="Cerrar menú">×</button>
+    </div>
+    <div class="drawer-foot">
+      <button id="btnLogout" class="drawer-logout" type="button">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <div class="h-[100dvh] grid grid-rows-[64px_28px_1fr_80px]">
+    <header class="topbar text-white px-3 flex items-center justify-between">
+      <button id="btnBack" class="icon-btn text-2xl" aria-label="Navegación">☰</button>
+      <h1 id="appTitle" class="text-base font-bold tracking-tight">Control IPERC</h1>
+      <div class="flex items-center gap-1">
+        <button id="btnSync" class="icon-btn relative" aria-label="Sincronizar">
+          <span id="syncIcon" class="material-symbols-outlined sync-icon">sync</span>
+          <span id="syncBadge" class="sync-badge hidden"></span>
+        </button>
+      </div>
+    </header>
+
+    <section id="statusBar" class="status-bar offline">Sin conexión</section>
+
+    <main id="content" class="overflow-y-auto overflow-x-hidden px-4 py-3 no-scrollbar">
+      <section class="view active" data-view="login">
+        <div class="bg-surface rounded-2xl p-5 shadow-sm border border-slate-100" style="position:relative;overflow:hidden;">
+          <!-- Login feedback overlay -->
+          <div id="loginFeedback" class="login-feedback hidden">
+            <div class="login-feedback-icon" id="loginFeedbackIcon">
+              <span id="loginFeedbackSymbol" class="material-symbols-outlined">check_circle</span>
+            </div>
+            <p id="loginFeedbackMsg" class="login-feedback-msg">¡Bienvenido!</p>
+          </div>
+          <div class="mb-5">
+            <div class="hero-logo">
+              <span class="material-symbols-outlined text-4xl text-white">manufacturing</span>
+            </div>
+            <h2 class="text-2xl font-extrabold text-primary mb-1 mt-4">Control IPERC<br /><span id="loginCompanyName">Cerro Lindo</span></h2>
+            <p class="text-sm text-muted">Autenticación de seguridad para supervisión de campo.</p>
+          </div>
+          <form id="loginForm" class="space-y-3">
+            <label class="block text-xs font-bold uppercase tracking-wider text-muted">Usuario o DNI
+              <div class="input-wrap mt-1">
+                <span class="material-symbols-outlined text-slate-500">badge</span>
+                <input id="loginUser" type="text" required class="w-full rounded-xl border-slate-200 h-12" placeholder="Ej: 70883288" />
+              </div>
+            </label>
+            <label class="block text-xs font-bold uppercase tracking-wider text-muted">Contraseña
+              <div class="input-wrap with-action mt-1">
+                <span class="material-symbols-outlined text-slate-500">lock</span>
+                <input id="loginPassword" type="password" required class="w-full rounded-xl border-slate-200 h-12" placeholder="Ingrese contraseña" />
+                <button id="btnToggleLoginPassword" type="button" class="input-action" aria-label="Mostrar u ocultar contraseña">
+                  <span id="loginPasswordToggleIcon" class="material-symbols-outlined text-slate-600">visibility</span>
+                </button>
+              </div>
+            </label>
+            <p id="usersDataInfo" class="hidden"></p>
+            <button id="btnLoginSubmit" type="submit" class="w-full h-12 rounded-xl bg-primary-container text-white font-bold shadow-lg flex items-center justify-center gap-2">
+              <span id="btnLoginSpinner" class="login-btn-spinner hidden"></span>
+              <span id="btnLoginLabel">INGRESAR</span>
+            </button>
+            <div class="login-actions-row">
+              <label class="remember-wrap" for="rememberLogin">
+                <input id="rememberLogin" type="checkbox" class="remember-check" />
+                <span>Recordarme</span>
+              </label>
+              <button id="btnForgotPassword" type="button" class="forgot-link">¿Olvidó su clave?</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="view" data-view="dashboard">
+        <div class="grid gap-3">
+          <div class="bg-surface rounded-xl px-3 py-2 border border-slate-100">
+            <p class="text-[10px] uppercase tracking-widest text-muted font-bold mb-1.5">Programación IPERC</p>
+            <div class="grid grid-cols-3 gap-1.5">
+              <div class="rounded-lg px-2 py-1.5 text-center" style="background:#e0f2fe">
+                <p class="text-[8px] uppercase font-bold" style="color:#0369a1">Completo</p>
+                <p id="metricCompleto" class="text-base font-black leading-tight" style="color:#0369a1">0</p>
+              </div>
+              <div class="rounded-lg px-2 py-1.5 text-center" style="background:#fff7e0">
+                <p class="text-[8px] uppercase font-bold" style="color:#7c4d00">En Progreso</p>
+                <p id="metricEnProgreso" class="text-base font-black leading-tight" style="color:#7c4d00">0</p>
+              </div>
+              <div class="rounded-lg px-2 py-1.5 text-center" style="background:#fee2e2">
+                <p class="text-[8px] uppercase font-bold" style="color:#991b1b">Pendiente</p>
+                <p id="metricPendienteStatus" class="text-base font-black leading-tight" style="color:#991b1b">0</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-surface rounded-xl p-4 border border-slate-100">
+            <button id="goNuevaProgramacion" class="w-full h-12 rounded-xl bg-primary text-white font-bold">NUEVA PROGRAMACIÓN</button>
+          </div>
+          <div id="dashboardIframeCard" class="bg-surface rounded-xl border border-slate-100 overflow-hidden hidden">
+            <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+              <p class="text-[10px] uppercase tracking-widest text-muted font-bold">Panel</p>
+              <div class="flex items-center gap-3">
+                <button id="btnIframeOpen" class="flex items-center gap-1 text-[10px] text-slate-500 font-bold">
+                  <span class="material-symbols-outlined" style="font-size:15px">open_in_new</span>Abrir
+                </button>
+                <button id="btnIframeFullscreen" class="flex items-center gap-1 text-[10px] text-primary font-bold">
+                  <span class="material-symbols-outlined" style="font-size:15px">open_in_full</span>Pantalla completa
+                </button>
+              </div>
+            </div>
+            <div id="dashboardIframeWrap" style="position:relative;">
+              <div id="dashboardIframeFallback" class="hidden" style="display:none;padding:24px 16px;text-align:center;">
+                <span class="material-symbols-outlined" style="font-size:36px;color:#94a3b8;display:block;margin-bottom:8px">dashboard</span>
+                <p style="font-size:13px;color:#64748b;margin-bottom:12px">El panel no puede mostrarse aquí por restricciones del servidor.</p>
+                <button id="btnIframeFallbackOpen" style="background:#12254c;color:#fff;font-size:12px;font-weight:700;padding:8px 20px;border-radius:8px;border:none;cursor:pointer;">
+                  Abrir panel en nueva pestaña
+                </button>
+              </div>
+              <iframe id="dashboardIframe" src="" frameborder="0" class="w-full" style="height:420px"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Iframe fullscreen overlay -->
+      <div id="iframeOverlay" class="hidden" style="position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#12254c;flex-shrink:0;">
+          <span style="color:#fff;font-size:12px;font-weight:700;letter-spacing:.05em;">PANEL</span>
+          <button id="btnIframeOverlayClose" style="color:#fff;display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;background:none;border:none;cursor:pointer;">
+            <span class="material-symbols-outlined" style="font-size:18px">close_fullscreen</span>Cerrar
+          </button>
+        </div>
+        <iframe id="dashboardIframeFs" src="" frameborder="0" style="flex:1;width:100%;border:none;"></iframe>
+      </div>
+
+      <section class="view" data-view="programacion">
+        <form id="programacionForm" class="space-y-3">
+          <div class="info-banner">
+            <span class="material-symbols-outlined">schedule</span>
+            <p id="programacionWindowInfo">Carga permitida en horarios configurados.</p>
+          </div>
+          <input type="hidden" id="guardia" value="A" />
+          <div class="bg-surface rounded-xl p-4 border border-slate-100 space-y-2">
+            <p class="text-xs font-bold uppercase tracking-wider text-muted">Guardia</p>
+            <div class="flex gap-2">
+              <button id="btnGuardiaA" type="button" class="picker-btn picker-btn--active flex-1 py-3 rounded-xl text-sm font-bold">Guardia A</button>
+              <button id="btnGuardiaB" type="button" class="picker-btn flex-1 py-3 rounded-xl text-sm font-medium">Guardia B</button>
+              <button id="btnGuardiaC" type="button" class="picker-btn flex-1 py-3 rounded-xl text-sm font-medium">Guardia C</button>
+            </div>
+          </div>
+          <input type="hidden" id="turno" value="DIA" />
+          <div class="bg-surface rounded-xl p-4 border border-slate-100 space-y-2">
+            <p class="text-xs font-bold uppercase tracking-wider text-muted">Turno</p>
+            <div class="flex gap-2">
+              <button id="btnTurnoDia" type="button" class="picker-btn picker-btn--active flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined" style="font-size:18px">light_mode</span>Día
+              </button>
+              <button id="btnTurnoNoche" type="button" class="picker-btn flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined" style="font-size:18px">dark_mode</span>Noche
+              </button>
+            </div>
+          </div>
+          <div class="bg-surface rounded-xl p-4 border border-slate-100">
+            <label class="block text-xs font-bold uppercase tracking-wider text-muted">Cantidad de IPERC Programados</label>
+            <div class="mt-2 grid grid-cols-[52px_1fr_52px] gap-2 items-center">
+              <button id="btnCantidadMenos" type="button" class="h-12 rounded-xl border border-slate-200 bg-slate-50 text-xl font-bold active:scale-95">-</button>
+              <input id="cantidadProgramada" type="number" min="1" value="1" class="w-full rounded-xl border-slate-200 h-12 text-center font-extrabold text-primary" required />
+              <button id="btnCantidadMas" type="button" class="h-12 rounded-xl border border-slate-200 bg-slate-50 text-xl font-bold active:scale-95">+</button>
+            </div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-muted mt-3">Actividades
+              <textarea id="actividadesTurno" rows="3" class="mt-1 w-full rounded-xl border-slate-200" placeholder="Detalle de actividad"></textarea>
+            </label>
+          </div>
+          <button type="submit" class="w-full h-14 rounded-xl bg-primary-container text-white font-extrabold flex items-center justify-center gap-3 shadow-lg">
+            <span>GUARDAR PROGRAMACIÓN</span>
+            <span class="material-symbols-outlined">send</span>
+          </button>
+        </form>
+      </section>
+
+      <section class="view" data-view="historial">
+        <div class="bg-surface rounded-xl p-4 border border-slate-100 mb-3">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h2 class="text-xl font-bold text-primary">Historial de Programación</h2>
+              <p class="text-sm text-muted">Resumen con cumplimiento y estado de sincronización</p>
+            </div>
+            <button id="btnExportHistorial" type="button" class="flex items-center gap-1 text-[10px] font-bold text-primary border border-primary/30 rounded-lg px-2 py-1.5 bg-primary/5 active:bg-primary/10 shrink-0">
+              <span class="material-symbols-outlined" style="font-size:15px">download</span>Exportar
+            </button>
+          </div>
+          <div class="relative mt-2">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style="font-size:18px">search</span>
+            <input id="historialSearch" type="text" placeholder="Buscar guardia, turno, actividad…" class="w-full pl-9 pr-3 h-9 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+        <button id="btnNuevoRegistroDesdeHistorial" type="button" class="w-full h-12 rounded-xl bg-primary text-white font-bold mb-3 flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-95 transition-all shadow-lg hover:shadow-xl"><span class="material-symbols-outlined">add_circle</span>AÑADIR PROGRAMACIÓN</button>
+        <div id="historialList" class="space-y-3"></div>
+      </section>
+
+      <section class="view" data-view="programacion-detail">
+        <!-- Meta del Día Section -->
+        <div class="bg-[#e2e2e2] rounded-lg p-1">
+          <div class="bg-white rounded-lg shadow-sm border-2 border-[#2a3b63] p-3">
+            <div class="flex justify-between items-start mb-2">
+              <div class="shrink-0">
+                <h2 class="text-[#44464e] font-medium uppercase tracking-widest text-[10px]">Meta del Día</h2>
+                <p class="text-[#1a1c1c] font-bold text-base leading-tight">Programación IPERC</p>
+                <p id="detailFechaLocal" class="text-[10px] text-[#5e6476] mt-0.5"></p>
+              </div>
+              <div class="flex gap-1 flex-wrap justify-end ml-2 items-center">
+                <div id="detailGuardiaBadge" class="bg-[#12254c] text-white px-2 py-0.5 rounded-full text-[8px] font-bold uppercase shrink-0 tracking-wide">GUARDIA A</div>
+                <div id="detailTurnoBadge" class="bg-[#12254c] text-white px-2 py-0.5 rounded-full text-[8px] font-bold uppercase shrink-0 tracking-wide">TURNO: DÍA</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between py-2 border-y border-[#dce2f8]/30">
+              <div class="flex items-center gap-3">
+                <div class="flex items-baseline gap-1">
+                  <span id="detailMetaValue" class="text-3xl font-black text-[#12254c]">0</span>
+                  <span class="text-[10px] text-[#44464e] font-bold uppercase">Objetivo</span>
+                </div>
+                <button id="btnIncrementMeta" type="button" class="w-6 h-6 rounded-full bg-[#12254c] text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform">
+                  <span class="material-symbols-outlined text-base">add</span>
+                </button>
+              </div>
+              <div class="flex gap-4">
+                <div class="text-center">
+                  <p class="text-[8px] text-[#44464e] font-bold uppercase">Meta</p>
+                  <p id="detailMetaDisplay" class="text-sm font-bold text-[#12254c]">0</p>
+                </div>
+                <div class="text-center">
+                  <p class="text-[8px] text-[#44464e] font-bold uppercase">Realizados</p>
+                  <p id="detailRealizados" class="text-sm font-bold text-[#12254c]">0</p>
+                </div>
+                <div class="text-center">
+                  <p class="text-[8px] text-[#44464e] font-bold uppercase">Progreso</p>
+                  <p id="detailProgreso" class="text-sm font-bold text-[#12254c]">0%</p>
+                </div>
+              </div>
+            </div>
+            <div class="mt-2 flex items-center gap-2 py-1 px-2 bg-[#12254c]/5 border border-[#12254c]/20 rounded-md">
+              <span class="material-symbols-outlined text-[#5e6476] text-xs">schedule</span>
+              <p class="text-[10px] font-medium text-[#5e6476]">Abierta: <span id="detailHorario" class="font-bold">07:00 - 08:00</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Registros del Bloque Section -->
+        <div class="mt-4">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="text-xs font-bold text-[#44464e] uppercase tracking-widest">Registros del Bloque</h3>
+            <span class="text-[10px] bg-[#e2e2e2] px-2 py-0.5 rounded font-bold text-[#44464e]">HOY</span>
+          </div>
+          <div id="detailRecordsList" class="space-y-3">
+            <!-- Records populated by JS -->
+          </div>
+        </div>
+
+        <!-- Floating Action Button -->
+        <button id="btnAddRecordFromDetail" type="button" class="hidden fixed bottom-24 right-6 w-14 h-14 bg-[#2a3b63] text-white rounded-full flex items-center justify-center shadow-2xl z-50 hover:scale-110 active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-3xl">add</span>
+        </button>
+      </section>
+
+      <section class="view" data-view="registro">
+  <form id="registroForm" class="flex flex-col gap-4 pb-16 max-w-2xl mx-auto w-full">
+    <input id="fechaHoraOculta" type="hidden" />
+
+    <div id="programacionBanner" class="hidden bg-primary-container/10 px-4 py-3 rounded-xl border-l-4 border-primary-container flex items-center gap-3">
+      <span class="material-symbols-outlined text-primary-container text-xl">link</span>
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Programacion vinculada</p>
+        <p id="programacionBannerText" class="text-xs text-muted mt-0.5"></p>
+      </div>
+    </div>
+
+
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label class="text-on-surface font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-sm">group</span> Guardia
+        </label>
+        <div class="relative">
+          <select id="registroGuardia" required class="w-full h-14 px-4 bg-surface-container-high border-2 border-transparent focus:border-primary rounded-xl text-on-surface appearance-none cursor-pointer transition-all text-sm font-medium">
+            <option value="A">Guardia A</option>
+            <option value="B">Guardia B</option>
+            <option value="C">Guardia C</option>
+          </select>
+          <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-primary">
+            <span class="material-symbols-outlined text-sm">expand_more</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-on-surface font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-sm">schedule</span> Turno
+        </label>
+        <div class="relative">
+          <select id="registroTurno" required class="w-full h-14 px-4 bg-surface-container-high border-2 border-transparent focus:border-primary rounded-xl text-on-surface appearance-none cursor-pointer transition-all text-sm font-medium">
+            <option value="DIA">Dia</option>
+            <option value="NOCHE">Noche</option>
+          </select>
+          <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-primary">
+            <span class="material-symbols-outlined text-sm">expand_more</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <div class="flex flex-col gap-2">
+      <label class="text-on-surface font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">person</span> TRABAJADOR
+      </label>
+      <div class="relative">
+        <input id="trabajadorInput" class="w-full h-16 px-4 pr-12 bg-white border-2 border-primary/30 focus:border-primary focus:bg-surface-container-high rounded-2xl text-on-surface focus:ring-0 transition-all text-base font-medium outline-none focus:shadow-lg shadow-sm" name="trabajador" placeholder="Seleccionar o escribir..." autocomplete="off" required />
+        <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-primary">
+          <span class="material-symbols-outlined text-lg">search</span>
+        </div>
+        <ul id="trabajadorDropdown" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border-2 border-primary/20 rounded-2xl shadow-xl z-50 max-h-64 overflow-y-auto">
+          <!-- Options populated by JS -->
+        </ul>
+      </div>
+    </div>
+
+
+
+    <div class="flex flex-col gap-3">
+      <label class="text-on-surface font-bold text-sm flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-sm">task</span> ACTIVIDAD REALIZADA
+      </label>
+      <div class="relative">
+        <textarea id="actividadInput" class="w-full p-4 bg-surface-container-high border-2 border-transparent focus:border-primary rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-0 transition-all resize-none text-base" placeholder="Describa la actividad realizada aqui..." rows="3"></textarea>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <label class="text-on-surface font-bold text-sm flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-sm">photo_camera</span> EVIDENCIA FOTOGRAFICA (IPERC)
+      </label>
+      <input id="photoInput" type="file" accept="image/*" capture="environment" class="hidden" />
+      <div id="captureShell" class="relative group overflow-hidden rounded-2xl border-4 border-dashed border-primary/30 bg-surface-container-lowest">
+        <button id="captureBtn" type="button" class="w-full aspect-video flex flex-col items-center justify-center gap-4 active:bg-primary/5 transition-colors">
+          <div class="w-24 h-24 bg-primary rounded-full flex items-center justify-center shadow-lg group-active:scale-90 transition-transform">
+            <span class="material-symbols-outlined text-[48px] text-white" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
+          </div>
+          <div class="text-center">
+            <p class="text-primary font-black text-xl">CAPTURAR IPERC</p>
+            <p class="text-on-surface-variant text-sm">Toque aqui para abrir la camara</p>
+          </div>
+        </button>
+        <img id="photoPreview" class="hidden w-full mt-3 rounded-xl border border-outline-variant/30" alt="Vista previa" />
+        <button id="btnClearPhoto" type="button" class="hidden mt-2 w-full flex items-center justify-center gap-1 text-xs font-bold text-red-600 py-1.5 rounded-lg border border-red-200 bg-red-50 active:bg-red-100 transition-colors">
+          <span class="material-symbols-outlined" style="font-size:15px">delete</span>Eliminar foto
+        </button>
+      </div>
+      <p id="photoMeta" class="text-xs text-muted">Sin fotografia seleccionada.</p>
+    </div>
+
+    <div class="pt-2">
+      <button type="submit" class="w-full h-16 rounded-xl bg-primary text-white font-bold tracking-widest text-lg shadow-xl flex items-center justify-center gap-3 active:scale-[0.97] transition-all hover:bg-primary/90 hover:shadow-2xl">
+        <span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">save</span>
+        GUARDAR REGISTRO
+      </button>
+    </div>
+  </form>
+</section>
+
+    </main>
+
+    <nav id="footerNav" class="bg-white border-t border-slate-200 grid grid-cols-3 gap-1 px-1 py-2">
+      <button class="nav-btn footer-btn active text-[10px] font-bold rounded-lg py-2" data-target="dashboard">
+        <span class="material-symbols-outlined footer-icon">dashboard</span>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-btn footer-btn text-[10px] font-bold rounded-lg py-2" data-target="programacion">
+        <span class="material-symbols-outlined footer-icon">event_note</span>
+        <span>Programación</span>
+      </button>
+      <button class="nav-btn footer-btn text-[10px] font-bold rounded-lg py-2" data-target="historial">
+        <span class="material-symbols-outlined footer-icon">history</span>
+        <span>Historial</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+

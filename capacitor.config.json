@@ -1,7 +1,7 @@
 {
   "appId": "com.cerrolindo.iperc",
   "appName": "Control IPERC",
-  "webDir": ".",
+  "webDir": "www",
   "server": {
     "androidScheme": "https",
     "cleartext": false

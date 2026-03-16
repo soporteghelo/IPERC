@@ -1,0 +1,14 @@
+{
+  "name": "Control IPERC",
+  "short_name": "IPERC",
+  "description": "Control de Inspecciones IPERC - Cerro Lindo",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#12254c",
+  "theme_color": "#12254c",
+  "orientation": "portrait",
+  "lang": "es",
+  "icons": [
+    { "src": "Logo.png", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
