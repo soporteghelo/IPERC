@@ -1476,7 +1476,11 @@
       recordsByProgram.set(key, (recordsByProgram.get(key) || 0) + 1);
     });
 
-    filtered.slice().reverse().forEach((item) => {
+    filtered.slice().sort((a, b) => {
+      const da = new Date(a.fechaHoraProgramacion || 0).getTime();
+      const db = new Date(b.fechaHoraProgramacion || 0).getTime();
+      return db - da; // más reciente primero
+    }).forEach((item) => {
       const meta = Number(item.cantidadProgramada || 0);
       const localCount = recordsByProgram.get(String(item.id)) || 0;
       const realizados = Math.max(localCount, Number(item.realizadosRemoto || 0));
