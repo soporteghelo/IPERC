@@ -639,6 +639,7 @@
     if (navigator.onLine) {
       await refreshUsersIfPossible({ silent: true, forceOnline: true });
       await refreshPersonalIfPossible({ silent: true });
+      fetchRemoteConfig().catch(console.error);
     }
 
     if (!state.usersCache.length) {
@@ -1062,8 +1063,9 @@
         await refreshPendingBadge();
       }
 
-      // 3. Always pull latest from Sheets (programaciones + supporting caches)
+      // 3. Always pull latest from Sheets (programaciones + config + supporting caches)
       await refreshProgramacionesIfPossible({ silent: true });
+      await fetchRemoteConfig();
       await refreshUIStats();
       Promise.all([
         refreshUsersIfPossible({ silent: true }),
