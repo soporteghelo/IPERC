@@ -1,9 +1,10 @@
-const CACHE_NAME = 'iperc-v8';
+const CACHE_NAME = 'iperc-v9';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './app.js',
   './styles.css',
+  './manifest.json',
   // config.local.json intentionally excluded — always fetched from network
 ];
 

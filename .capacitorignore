@@ -1,0 +1,9 @@
+.git
+node_modules
+android
+ios
+.capacitorignore
+README.md
+README.VERSION
+preview.html
+Code.gs
