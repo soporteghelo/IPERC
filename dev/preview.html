@@ -196,7 +196,7 @@
         </label>
       </div>
 
-      <p class="hint">Carga el archivo `index.html` y actualiza la vista. El modo auto recarga fuerza refresco cada 2s.</p>
+      <p class="hint">Carga el archivo `src/index.html` y actualiza la vista. El modo auto recarga fuerza refresco cada 2s.</p>
     </section>
 
     <section class="panel" id="configPanel">
@@ -208,12 +208,12 @@
         <button id="reloadConfigBtn" type="button">Recargar Config</button>
       </div>
       <div id="configList" class="config-list"></div>
-      <p class="hint">Lee `config.local.json` (modo sin cache). Si estas abriendo con file:// puede bloquearse la lectura.</p>
+      <p class="hint">Lee `src/config.local.json` (modo sin cache). Si estas abriendo con file:// puede bloquearse la lectura.</p>
     </section>
 
     <section class="stage">
       <div id="frame" class="frame">
-        <iframe id="appFrame" src="index.html"></iframe>
+        <iframe id="appFrame" src="../src/index.html"></iframe>
       </div>
     </section>
   </main>
@@ -241,7 +241,7 @@
     }
 
     function reloadFrame() {
-      const base = 'index.html';
+      const base = '../src/index.html';
       iframe.src = `${base}?ts=${Date.now()}`;
     }
 
@@ -279,7 +279,7 @@
 
     async function reloadConfig() {
       try {
-        const response = await fetch('config.local.json', { cache: 'no-store' });
+        const response = await fetch('../src/config.local.json', { cache: 'no-store' });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }

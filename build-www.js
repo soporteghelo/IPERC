@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const SRC = __dirname;
+const SRC = path.join(__dirname, 'src');
 const DEST = path.join(__dirname, 'www');
 
 const FILES = [
