@@ -87,6 +87,21 @@ function doGetConfig(e) {
 
   var result = {};
   var numericFields = ['retentionDays', 'syncBatchSize', 'syncRetryMax'];
+  var timeFields = ['amStart', 'amEnd', 'pmStart', 'pmEnd'];
+  var tz = Session.getScriptTimeZone();
+
+  function formatCellValue(key, raw) {
+    if (raw == null || raw === '') return '';
+    if (raw instanceof Date) {
+      if (timeFields.indexOf(key) >= 0) return Utilities.formatDate(raw, tz, 'HH:mm');
+      return Utilities.formatDate(raw, tz, 'yyyy-MM-dd HH:mm:ss');
+    }
+    if (numericFields.indexOf(key) >= 0) {
+      var n = Number(raw);
+      return isNaN(n) ? String(raw).trim() : n;
+    }
+    return String(raw).trim();
+  }
 
   // Detect format:
   // HORIZONTAL → row 1 = field names, row 2 = values  (e.g. amStart | amEnd | ... in columns)
@@ -99,14 +114,8 @@ function doGetConfig(e) {
     var vals = values.length > 1 ? values[1] : [];
     for (var c = 0; c < headers.length; c++) {
       var key = String(headers[c] || '').trim();
-      var val = String(vals[c] == null ? '' : vals[c]).trim();
       if (!key) continue;
-      if (numericFields.indexOf(key) >= 0) {
-        var nH = Number(val);
-        result[key] = isNaN(nH) ? val : nH;
-      } else {
-        result[key] = val;
-      }
+      result[key] = formatCellValue(key, vals[c]);
     }
   } else {
     // Vertical: col A = key, col B = value. Skip header row if first cell is "clave/key/campo"
@@ -115,14 +124,8 @@ function doGetConfig(e) {
     if (firstCell === 'clave' || firstCell === 'key' || firstCell === 'campo') startRow = 1;
     for (var i = startRow; i < values.length; i++) {
       var clave = String(values[i][0] || '').trim();
-      var valor = String(values[i][1] == null ? '' : values[i][1]).trim();
       if (!clave) continue;
-      if (numericFields.indexOf(clave) >= 0) {
-        var nV = Number(valor);
-        result[clave] = isNaN(nV) ? valor : nV;
-      } else {
-        result[clave] = valor;
-      }
+      result[clave] = formatCellValue(clave, values[i][1]);
     }
   }
 

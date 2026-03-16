@@ -520,7 +520,7 @@
         const pmStart = state.localConfig.pmStart || '19:00';
         const pmEnd = state.localConfig.pmEnd || '20:00';
         const horaActual = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-        showToast(`Fuera de horario (${horaActual}). Permitido: ${amStart}–${amEnd} y ${pmStart}–${pmEnd}`, 'warning', 5000);
+        showToast(`Fuera de horario (${horaActual}). Ventanas: ${amStart}–${amEnd} / ${pmStart}–${pmEnd}`, 'warning', 4000);
         return;
       }
       showView('programacion');
@@ -763,7 +763,7 @@
       const pmStart = state.localConfig.pmStart || '19:00';
       const pmEnd = state.localConfig.pmEnd || '20:00';
       const horaActual = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-      showToast(`Fuera de horario (${horaActual}). Permitido: ${amStart}–${amEnd} y ${pmStart}–${pmEnd}`, 'warning', 5000);
+      showToast(`Fuera de horario (${horaActual}). Ventanas: ${amStart}–${amEnd} / ${pmStart}–${pmEnd}`, 'warning', 4000);
       return;
     }
 
