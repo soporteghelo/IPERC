@@ -83,29 +83,46 @@ function doGetConfig(e) {
   if (!sheet) throw new Error('No existe la pestaña CONFIG en el Sheet.');
 
   var values = sheet.getDataRange().getValues();
+  if (!values.length) return jsonOutput({ ok: true, config: {}, fetchedAt: new Date().toISOString() });
+
   var result = {};
-
-  // Expected format: row 1 = headers (clave | valor), rows 2+ = key-value pairs
-  var startRow = 0;
-  if (values.length > 0) {
-    var firstCell = String(values[0][0] || '').toLowerCase().replace(/[^a-z]/g, '');
-    if (firstCell === 'clave' || firstCell === 'key' || firstCell === 'campo') {
-      startRow = 1; // skip header row
-    }
-  }
-
-  // Numeric fields that should be cast to Number
   var numericFields = ['retentionDays', 'syncBatchSize', 'syncRetryMax'];
 
-  for (var i = startRow; i < values.length; i++) {
-    var clave = String(values[i][0] || '').trim();
-    var valor = String(values[i][1] == null ? '' : values[i][1]).trim();
-    if (!clave) continue;
-    if (numericFields.indexOf(clave) >= 0) {
-      var n = Number(valor);
-      result[clave] = isNaN(n) ? valor : n;
-    } else {
-      result[clave] = valor;
+  // Detect format:
+  // HORIZONTAL → row 1 = field names, row 2 = values  (e.g. amStart | amEnd | ... in columns)
+  // VERTICAL   → col A = key, col B = value            (e.g. amStart in A2, 10:00 in B2)
+  var isHorizontal = values[0].length > 2;
+
+  if (isHorizontal) {
+    // Row 1: headers, Row 2: values
+    var headers = values[0];
+    var vals = values.length > 1 ? values[1] : [];
+    for (var c = 0; c < headers.length; c++) {
+      var key = String(headers[c] || '').trim();
+      var val = String(vals[c] == null ? '' : vals[c]).trim();
+      if (!key) continue;
+      if (numericFields.indexOf(key) >= 0) {
+        var nH = Number(val);
+        result[key] = isNaN(nH) ? val : nH;
+      } else {
+        result[key] = val;
+      }
+    }
+  } else {
+    // Vertical: col A = key, col B = value. Skip header row if first cell is "clave/key/campo"
+    var startRow = 0;
+    var firstCell = String(values[0][0] || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (firstCell === 'clave' || firstCell === 'key' || firstCell === 'campo') startRow = 1;
+    for (var i = startRow; i < values.length; i++) {
+      var clave = String(values[i][0] || '').trim();
+      var valor = String(values[i][1] == null ? '' : values[i][1]).trim();
+      if (!clave) continue;
+      if (numericFields.indexOf(clave) >= 0) {
+        var nV = Number(valor);
+        result[clave] = isNaN(nV) ? valor : nV;
+      } else {
+        result[clave] = valor;
+      }
     }
   }
 
