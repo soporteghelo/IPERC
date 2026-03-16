@@ -1,0 +1,37 @@
+{
+  "webhookUrl": "https://script.google.com/macros/s/AKfycbxJkzccl_SUODuo61Y7IEKGUVEg9wPnFFHT7TtfEGO8gBPy0lKe4dtxxR1GpPV35gFX/exec",
+  "sheetId": "17cxHfwY_xz2Jf9zCgCYmNcGdNS0lvX-ZK1oeiOiCBEg",
+  "driveFolderId": "10Pq6ZkFldvYscycP8F32_M-Sc3pkZu4c",
+  "programTab": "DATA_PROGRAMA",
+  "registrosTab": "DATA_REGISTROS",
+  "usersTab": "USUARIOS",
+  "personalTab": "PERSONAL",
+  "amStart": "10:00",
+  "amEnd": "13:00",
+  "pmStart": "19:00",
+  "pmEnd": "20:00",
+  "retentionDays": 14,
+  "companyName": "AESA Cerro Lindo",
+  "dashboardIframeUrl": "https://script.google.com/macros/s/AKfycbyXlfTuVFHmdUStWApeFzx2jQCiiYXE2uZV3x_E-xeBZpx_um0uCThp46F64z5QecQw6g/exec",
+  "supportWhatsappNumber": "+51983113140",
+  "timezone": "America/Lima",
+  "syncBatchSize": 100,
+  "syncRetryMax": 3,
+  "image": {
+    "maxImageWidth": 1200,
+    "quality": 0.5,
+    "maxImageKB": 500
+  },
+  "supervisors": [
+    "Carlos Ruiz",
+    "María García",
+    "Jorge Cárdenas",
+    "Ana Castillo"
+  ],
+  "workers": [
+    "Juan Pérez - Operador de Maquinaria",
+    "María García - Técnico Electricista",
+    "Carlos Ruiz - Supervisor de Seguridad",
+    "Luis Mendoza - Perforista"
+  ]
+}

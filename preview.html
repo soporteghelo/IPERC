@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Preview IPERC</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --accent: #38bdf8;
+      --frame: #0b1220;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top, #1f2937, #0b1020 60%, #070b16);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 16px;
+      padding: 16px;
+    }
+    .panel {
+      background: rgba(17, 24, 39, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 14px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      height: fit-content;
+    }
+    .panel label {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .panel input[type="range"] {
+      width: 100%;
+    }
+    select, button, input[type="range"] {
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: #0b1220;
+      color: var(--text);
+      padding: 10px;
+      font-size: 13px;
+    }
+    button {
+      cursor: pointer;
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      border: none;
+      font-weight: 600;
+    }
+    .stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .frame {
+      background: var(--frame);
+      border-radius: 24px;
+      padding: 14px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      transform-origin: top center;
+    }
+    iframe {
+      width: 360px;
+      height: 780px;
+      border: none;
+      border-radius: 18px;
+      background: #0b1220;
+    }
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .panel-title {
+      margin: 0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .config-list {
+      display: grid;
+      gap: 8px;
+    }
+    .config-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text);
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.2);
+      padding-bottom: 6px;
+    }
+    .config-row span {
+      color: var(--muted);
+    }
+    .config-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .stage {
+        padding-bottom: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Preview IPERC</h1>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <h2 class="panel-title">Controles</h2>
+      <label>
+        Dispositivo
+        <select id="deviceSelect">
+          <option value="360x780">Android 360x780</option>
+          <option value="390x844">iPhone 14 390x844</option>
+          <option value="412x915">Pixel 7 412x915</option>
+          <option value="428x926">iPhone 14 Pro Max 428x926</option>
+          <option value="768x1024">Tablet 768x1024</option>
+        </select>
+      </label>
+
+      <label>
+        Escala
+        <input id="scaleRange" type="range" min="0.6" max="1.2" step="0.05" value="1" />
+      </label>
+
+      <div class="row">
+        <button id="reloadBtn" type="button">Recargar App</button>
+        <label class="checkbox">
+          <input id="autoReload" type="checkbox" />
+          Auto
+        </label>
+      </div>
+
+      <p class="hint">Carga el archivo `index.html` y actualiza la vista. El modo auto recarga fuerza refresco cada 2s.</p>
+    </section>
+
+    <section class="panel" id="configPanel">
+      <div class="row">
+        <h2 class="panel-title">Configuración actual</h2>
+        <span id="configStatus" class="config-pill">sin leer</span>
+      </div>
+      <div class="row">
+        <button id="reloadConfigBtn" type="button">Recargar Config</button>
+      </div>
+      <div id="configList" class="config-list"></div>
+      <p class="hint">Lee `config.local.json` (modo sin cache). Si estas abriendo con file:// puede bloquearse la lectura.</p>
+    </section>
+
+    <section class="stage">
+      <div id="frame" class="frame">
+        <iframe id="appFrame" src="index.html"></iframe>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const frame = document.getElementById('frame');
+    const iframe = document.getElementById('appFrame');
+    const deviceSelect = document.getElementById('deviceSelect');
+    const scaleRange = document.getElementById('scaleRange');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const autoReload = document.getElementById('autoReload');
+    const reloadConfigBtn = document.getElementById('reloadConfigBtn');
+    const configList = document.getElementById('configList');
+    const configStatus = document.getElementById('configStatus');
+    let reloadTimer = null;
+
+    function applySize() {
+      const [w, h] = deviceSelect.value.split('x').map(Number);
+      iframe.style.width = `${w}px`;
+      iframe.style.height = `${h}px`;
+    }
+
+    function applyScale() {
+      frame.style.transform = `scale(${scaleRange.value})`;
+    }
+
+    function reloadFrame() {
+      const base = 'index.html';
+      iframe.src = `${base}?ts=${Date.now()}`;
+    }
+
+    function setConfigStatus(text, ok = true) {
+      configStatus.textContent = text;
+      configStatus.style.color = ok ? 'var(--accent)' : '#f97316';
+      configStatus.style.background = ok ? 'rgba(56, 189, 248, 0.12)' : 'rgba(249, 115, 22, 0.15)';
+    }
+
+    function renderConfig(config) {
+      const rows = [
+        ['webhookUrl', config.webhookUrl || '(vacio)'],
+        ['sheetId', config.sheetId || '(vacio)'],
+        ['driveFolderId', config.driveFolderId || '(vacio)'],
+        ['programTab', config.programTab || '(vacio)'],
+        ['registrosTab', config.registrosTab || '(vacio)'],
+        ['usersTab', config.usersTab || '(vacio)'],
+        ['personalTab', config.personalTab || '(vacio)'],
+        ['timezone', config.timezone || '(vacio)'],
+        ['syncBatchSize', String(config.syncBatchSize || '')],
+        ['syncRetryMax', String(config.syncRetryMax || '')],
+        ['ventana AM', `${config.amStart || '--'} - ${config.amEnd || '--'}`],
+        ['ventana PM', `${config.pmStart || '--'} - ${config.pmEnd || '--'}`],
+        ['imagen', `${config.image?.maxImageWidth || '--'}px / q${config.image?.quality ?? '--'} / ${config.image?.maxImageKB || '--'}KB`],
+        ['supervisores', String((config.supervisors || []).length)],
+        ['trabajadores', String((config.workers || []).length)],
+      ];
+
+      configList.innerHTML = rows
+        .map(([label, value]) => (
+          `<div class="config-row"><span>${label}</span><strong>${value}</strong></div>`
+        ))
+        .join('');
+    }
+
+    async function reloadConfig() {
+      try {
+        const response = await fetch('config.local.json', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const config = await response.json();
+        renderConfig(config || {});
+        setConfigStatus('config ok', true);
+      } catch (error) {
+        configList.innerHTML = '<div class="hint">No se pudo leer config.local.json.</div>';
+        setConfigStatus('error', false);
+        console.warn(error);
+      }
+    }
+
+    deviceSelect.addEventListener('change', applySize);
+    scaleRange.addEventListener('input', applyScale);
+    reloadBtn.addEventListener('click', reloadFrame);
+    reloadConfigBtn.addEventListener('click', reloadConfig);
+
+    autoReload.addEventListener('change', () => {
+      if (autoReload.checked) {
+        reloadFrame();
+        reloadConfig();
+        reloadTimer = setInterval(() => {
+          reloadFrame();
+          reloadConfig();
+        }, 2000);
+      } else {
+        clearInterval(reloadTimer);
+      }
+    });
+
+    applySize();
+    applyScale();
+    reloadConfig();
+  </script>
+</body>
+</html>
