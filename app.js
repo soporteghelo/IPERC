@@ -335,30 +335,16 @@
     const btnClose = document.getElementById('btnIframeOverlayClose');
     if (!card || !iframe) return;
 
-    if (!url) return;
+    if (!url) { card.classList.add('hidden'); return; }
 
+    // Show card and iframe; always show "Abrir" as companion button
     card.classList.remove('hidden');
     iframe.style.display = 'block';
     if (fallback) { fallback.style.display = 'none'; fallback.classList.add('hidden'); }
+    // Update src whenever URL changes
+    iframe.src = url;
 
-    // Set src only if it changed to avoid reload flicker
-    if (iframe.src !== url) iframe.src = url;
-
-    // Detect X-Frame-Options block: after load, try accessing contentDocument
-    // If cross-origin block occurs, show fallback button
-    iframe.onload = () => {
-      try {
-        // This throws if blocked by X-Frame-Options
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-        if (!doc || !doc.body || doc.body.innerHTML === '') throw new Error('empty');
-      } catch (_) {
-        // Likely blocked — show fallback, hide iframe
-        iframe.style.display = 'none';
-        if (fallback) { fallback.style.display = 'block'; fallback.classList.remove('hidden'); }
-      }
-    };
-
-    // "Abrir" and fallback buttons: open in new tab
+    // Open-in-new-tab buttons
     const openInTab = () => window.open(url, '_blank', 'noopener,noreferrer');
     if (btnOpen && !btnOpen.dataset.wired) { btnOpen.dataset.wired = '1'; btnOpen.addEventListener('click', openInTab); }
     if (btnFallbackOpen && !btnFallbackOpen.dataset.wired) { btnFallbackOpen.dataset.wired = '1'; btnFallbackOpen.addEventListener('click', openInTab); }
@@ -702,6 +688,7 @@
     persistRememberedLogin(dni);
     loadSession();
     setLoginLoading(false);
+    fetchRemoteConfig().then(() => applyDashboardIframe()).catch(console.error);
     showLoginFeedback('success', `¡Bienvenido, ${activeUser.nombre || dni}!`, () => showView('historial'));
   }
 
